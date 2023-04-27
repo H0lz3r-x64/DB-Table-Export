@@ -52,6 +52,7 @@ class DatabaseExport:
         f.close()
         if open_file:
             os.startfile(self.output_html)
+        return self.output_html
 
     def convertHtmlToPdf(self, landscape=False, print_background=True, paper_format="a4",
                          scale=0.4, open_file=True) -> [str]:
