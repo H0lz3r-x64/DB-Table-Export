@@ -10,9 +10,9 @@ from sub.DB_Table_Export.ReportPopUp import ReportPopup
 def report_functionality(table: QTableWidget, export_name: str, report_type: REPORT_TYPES):
     template = None
     if report_type == REPORT_TYPES.REPORT_TABLE:
-        template = "html/TEMPLATE_TABLE_REPORT.html"
+        template = "report_template_files/TEMPLATE_TABLE_REPORT.html"
     elif report_type == REPORT_TYPES.REPORT_WEEKVIEW:
-        template = "html/TEMPLATE_TABLE_REPORT.html"
+        template = "report_template_files/TEMPLATE_TABLE_REPORT.html"
 
     # Create and show a popup window for the report options
     popup = ReportPopup()
