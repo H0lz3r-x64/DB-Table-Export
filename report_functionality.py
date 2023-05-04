@@ -11,7 +11,7 @@ def report_functionality(table: QTableWidget, export_name: str, report_type: REP
     template = None
     if report_type == REPORT_TYPES.REPORT_TABLE:
         template = "report_template_files/TEMPLATE_TABLE_REPORT.html"
-    elif report_type == REPORT_TYPES.REPORT_WEEKVIEW:
+    elif report_type == REPORT_TYPES.REPORT_WEEKPLAN:
         template = "report_template_files/TEMPLATE_TABLE_REPORT.html"
 
     # Create and show a popup window for the report options
