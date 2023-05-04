@@ -1,7 +1,8 @@
-import base64, os, jinja2, mysql.connector
-import datetime
+import base64, os, jinja2, datetime, bs4
+from typing import Union
 
 from selenium.common.exceptions import TimeoutException
+from selenium.webdriver.chrome.webdriver import WebDriver
 from selenium.webdriver.common.by import By
 from webdrivermanager.chrome import ChromeDriverManager
 from selenium.webdriver.chrome.service import Service
@@ -12,16 +13,16 @@ from selenium.webdriver.chrome.options import Options
 
 
 class DatabaseExport:
-    def __init__(self, template: str, exportName, output_html="", output_pdf=""):
+    def __init__(self, template: str, export_name: str, output_html="", output_pdf=""):
         # Filenames
         self.template = template
-        self.exportName = exportName
+        self.exportName = export_name
         if output_html == "":
-            self.output_html = os.path.abspath(f"{exportName}_Export_{datetime.date.today()}.html")
+            self.output_html = os.path.abspath(f"{export_name}_Export_{datetime.date.today()}.html")
         else:
             self.output_html = os.path.abspath(output_html)
         if output_pdf == "":
-            self.output_pdf = os.path.abspath(f"{exportName}_export_{datetime.date.today()}.pdf")
+            self.output_pdf = os.path.abspath(f"{export_name}_export_{datetime.date.today()}.pdf")
         else:
             self.output_pdf = os.path.abspath(output_pdf)
 
@@ -31,6 +32,9 @@ class DatabaseExport:
                             "A5": (5.8, 8.3), "a5": (5.8, 8.3),
                             "A4": (8.3, 11.7), "a4": (8.3, 11.7),
                             "A3": (11.7, 16.5), "a3": (11.7, 16.5)}
+
+        self.tmp_html_path = "tmp_files\\tmp_report.html"
+        self.tmp_pdf_path = "tmp_files\\tmp_report.pdf"
 
     @staticmethod
     def render_without_request(template_name, **template_vars):
@@ -44,18 +48,65 @@ class DatabaseExport:
     def get_format_in_inches(self, paper_format: str):
         return self.format_dict[paper_format]
 
-    def create_html(self, display_headers, rows, open_file=True):
-        sourceHtml = DatabaseExport.render_without_request(self.template, tablename=self.exportName, header=display_headers, rows=rows)
-        
-        f = open(self.output_html, "w", encoding='utf-8')
-        f.write(sourceHtml)
-        f.close()
+    @staticmethod
+    def __consolidate_css_html(input_html) -> str:
+        """
+        Consolidate the html string with its external css references and png images,
+        so any externally referenced css page(s) and image file(s) are not needed.
+
+        :param input_html: A string containing the content of the html file
+        :return: A string containing the html source now with the before external css and images embedded into it
+        """
+        soup = bs4.BeautifulSoup(input_html, features="lxml")
+        stylesheets = soup.findAll("link", {"rel": "stylesheet"})
+        for s in stylesheets:
+            t = soup.new_tag('style')
+            c = bs4.element.NavigableString(open(s["href"]).read())
+            t.insert(0, c)
+            t['type'] = 'text/css'
+            s.replaceWith(t)
+
+        images = soup.findAll("img")
+        for i in images:
+            f = open(i["src"], "rb")
+            b = base64.b64encode(f.read())
+            f.close()
+            i["src"] = "data:image/png;base64," + b.decode()
+
+        return str(soup)
+
+    def create_html(self, display_headers, rows, open_file=True, save_file=False) -> str:
+        print(f"{datetime.datetime.now()}: creating {self.exportName} HTML file...")
+
+        # generate source html string from template and data
+        sourceHtml = DatabaseExport.render_without_request(self.template, tablename=self.exportName,
+                                                           header=display_headers, rows=rows)
+        # consolidate the html string with its external css references,
+        # so any externally referenced css page(s) are not needed.
+        sourceHtml = self.__consolidate_css_html(sourceHtml)
+
+        # save as temporary file
+        print(f"{datetime.datetime.now()}: saving temporary PDF file")
+        self.__save_to_file(self.tmp_html_path, sourceHtml, override_check=False)
+
+        # open file
         if open_file:
-            os.startfile(self.output_html)
+            print(f"{datetime.datetime.now()}: opening HTML file")
+            os.startfile(self.tmp_html_path)
+
+        # save to file
+        if save_file:
+            print(f"{datetime.datetime.now()}: saving HTML file")
+            self.output_html = self.__save_to_file(self.output_html, sourceHtml, override_check=True)
+            print(f"{datetime.datetime.now()}: saved HTML file to {self.output_html}")
+
+        # return path
         return self.output_html
 
-    def convertHtmlToPdf(self, landscape=False, print_background=True, paper_format="a4",
-                         scale=0.4, open_file=True) -> [str]:
+    def convert_html_to_pdf(self, is_landscape=False, print_background=True, paper_format="a4",
+                            scale=0.4, open_file=True, save_file=False) -> Union[str, None]:
+        print(f"{datetime.datetime.now()}: converting HTML to PDF...")
+
         # chrome binary options
         options = Options()
         options.add_argument("--headless")
@@ -63,39 +114,87 @@ class DatabaseExport:
         options.add_argument('--no-sandbox')
         options.add_argument('--disable-dev-shm-usage')
 
-        # get driver, whether its installed or needs to be downloaded
+        driver = WebDriver
+        # get driver, search for existing one or download it
         try:
             driver = webdriver.Chrome(service=Service(), options=options)
-            print("chromedriver in PATH found")
+            print("    chromedriver in PATH found")
         except Exception as e:
             print(e)
             serv = ChromeDriverManager().download_and_install()
             for i in range(len(serv)):
                 driver = webdriver.Chrome(service=Service(serv[i]), options=options)
-            print("no local driver found, installed driver and signed it")
+            print("    no local driver found, installed driver")
 
         # set current site to html file
-        driver.get(self.output_html)
+        driver.get(os.path.abspath(self.tmp_html_path))
 
         # wait for it to load
         try:
             myElem = WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.ID, 'loaded')))
-            print("Page is ready")
+            print("    HTML page successfully loaded")
         except TimeoutException:
-            print("Loading took too much time")
+            print("    Loading took too much time")
+            print("    Aborting...")
+            return None
 
         # set parameters for pdf conversion
 
-        params = {'landscape': landscape, 'printBackground': print_background, 'scale': scale,
+        params = {'landscape': is_landscape, 'printBackground': print_background, 'scale': scale,
                   'paperWidth': self.format_dict[paper_format][0], 'paperHeight': self.format_dict[paper_format][1]}
 
-        # open outputfile as binary
-        f = open(self.output_pdf, "w+b")
+        # perform pdf conversion
         pdf = driver.execute_cdp_cmd("Page.printToPDF", params)
-
-        # decode base64 to binary
-        f.write(base64.b64decode(pdf['data']))
-        f.close()
         driver.quit()
+
+        # save as temporary file
+        print(f"{datetime.datetime.now()}: saving temporary PDF file")
+        self.__save_to_file(self.tmp_pdf_path, base64.b64decode(pdf['data']), override_check=False)
+
+        # open file
         if open_file:
-            os.startfile(self.output_pdf)
+            print(f"{datetime.datetime.now()}: opening PDF file")
+            os.startfile(self.tmp_pdf_path)
+
+        # save file
+        if save_file:
+            print(f"{datetime.datetime.now()}: saving PDF file")
+            self.output_pdf = self.__save_to_file(self.output_pdf, base64.b64decode(pdf['data']),
+                                                  override_check=True)
+            print(f"{datetime.datetime.now()}: saved PDF file to {self.output_pdf}")
+
+        # return path
+        return self.output_pdf
+
+    @staticmethod
+    def __save_to_file(output_path: str, data: Union[str, bytes], override_check=False) -> str:
+        if override_check and os.path.exists(output_path):
+            # Split the output path into the part before and after the dot
+            no_suffix_path, suffix = output_path.split('.')
+
+            # Initialize a counter for duplicate file names
+            i = 1
+
+            # Loop until there is no existing file with the same name
+            while os.path.exists(f"{no_suffix_path} ({i}).{suffix}"):
+                i += 1
+
+            # If the counter is greater than zero, append it to the output path
+            if i > 0:
+                output_path = f"{no_suffix_path} ({i}).{suffix}"
+
+        # Set the mode and encoding for writing to the file
+        mode = 'w'
+        encoding = 'utf-8'
+        # If the data is bytes, use binary mode and no encoding
+        if type(data) == bytes:
+            mode = 'w+b'
+            encoding = None
+
+        # Open the file with the given mode and encoding
+        with open(output_path, mode, encoding=encoding) as f:
+            # Write the data to the file
+            f.write(data)
+
+        # Return the output path as a string
+        return output_path
