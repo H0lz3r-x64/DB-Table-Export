@@ -28,8 +28,8 @@ def report_functionality(table: QTableWidget, export_name: str, report_type: REP
                            download_path + ".html", download_path + ".pdf")
     # Get the table headers and rows from the table widget
     headers = [table.horizontalHeaderItem(i).text() for i in range(table.columnCount())]
-    rows = [[table.item(row, col).text() for col in range(table.columnCount())] for row in
-            range(table.rowCount())]
+    rows = [[table.item(row, col).text() if table.item(row, col) is not None else "" for col in range(
+            table.columnCount())] for row in range(table.rowCount())]
 
     # Create an HTML file from the template, headers and rows
     html_filename = dbExp.create_html(headers, rows, open_file=result['html'], save_file=result['save'])
