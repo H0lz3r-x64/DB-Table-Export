@@ -61,5 +61,6 @@ class ReportPopup(QDialog):
         self.close()
 
     def cancel_clicked(self):
+        self.result = None
         # Close the popup without emitting any signal
         self.close()

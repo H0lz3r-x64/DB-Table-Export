@@ -7,25 +7,33 @@ from sub.DB_Table_Export.DBExport import DatabaseExport
 from sub.DB_Table_Export.ReportPopUp import ReportPopup
 
 
-def report_functionality(table: QTableWidget, export_name: str, report_type: REPORT_TYPES):
+def report_functionality(table: QTableWidget, report_name: str, report_type: REPORT_TYPES):
     template = None
+    is_landscape = None
+
     if report_type == REPORT_TYPES.REPORT_TABLE:
         template = "report_template_files/TEMPLATE_TABLE_REPORT.html"
+        is_landscape = False
     elif report_type == REPORT_TYPES.REPORT_WEEKPLAN:
         template = "report_template_files/TEMPLATE_WEEKPLAN_REPORT.html"
+        is_landscape = True
 
     # Create and show a popup window for the report options
     popup = ReportPopup()
-    popup.exec_()
+    x = popup.exec_()
+
     # Get the result dictionary from the popup window
     result = popup.result
 
+    # return if result is None which is the case if the cancel button is clicked
+    if not result:
+        return
+
     # Set the download path for the report files
-    download_path = os.path.join(os.path.expanduser('~'), "Downloads", export_name)
+    download_path = os.path.join(os.path.expanduser('~'), "Downloads")
 
     # Create a DatabaseExport object with the template, title and file names
-    dbExp = DatabaseExport(template, export_name,
-                           download_path + ".html", download_path + ".pdf")
+    dbExp = DatabaseExport(template, report_name, download_path, download_path)
     # Get the table headers and rows from the table widget
     headers = [table.horizontalHeaderItem(i).text() for i in range(table.columnCount())]
     rows = [[table.item(row, col).text() if table.item(row, col) is not None else "" for col in range(
@@ -34,8 +42,9 @@ def report_functionality(table: QTableWidget, export_name: str, report_type: REP
     # Create an HTML file from the template, headers and rows
     html_filename = dbExp.create_html(headers, rows, open_file=result['html'], save_file=result['save'])
     # Convert the HTML file to a PDF file with a given scale factor
+
     if result['pdf']:
-        pdf_filename = dbExp.convert_html_to_pdf(scale=0.7, open_file=result['pdf'], save_file=result['save'])
+        pdf_filename = dbExp.convert_html_to_pdf(is_landscape=is_landscape, scale=0.7, open_file=result['pdf'], save_file=result['save'])
 
     msg = QMessageBox()
     msg.setWindowTitle("Report Successful")

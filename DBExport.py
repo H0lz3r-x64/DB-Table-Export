@@ -13,18 +13,24 @@ from selenium.webdriver.chrome.options import Options
 
 
 class DatabaseExport:
-    def __init__(self, template: str, export_name: str, output_html="", output_pdf=""):
+    def __init__(self, template: str, export_name: str, path_to_output_html="", path_to_output_pdf=""):
         # Filenames
         self.template = template
-        self.exportName = export_name
-        if output_html == "":
+        splitup = export_name.split("<split>")
+        self.title = splitup[0]
+        self.extratitle = ""
+        if len(splitup) > 1:
+            self.extratitle = splitup[1]
+        self.escaped_export_name = export_name.replace("<split>", "_")
+
+        if path_to_output_html == "":
             self.output_html = os.path.abspath(f"{export_name}_Export_{datetime.date.today()}.html")
         else:
-            self.output_html = os.path.abspath(output_html)
-        if output_pdf == "":
+            self.output_html = os.path.abspath(os.path.join(path_to_output_html, f"{self.escaped_export_name}.html"))
+        if path_to_output_pdf == "":
             self.output_pdf = os.path.abspath(f"{export_name}_export_{datetime.date.today()}.pdf")
         else:
-            self.output_pdf = os.path.abspath(output_pdf)
+            self.output_pdf = os.path.abspath(os.path.join(path_to_output_pdf, f"{self.escaped_export_name}.pdf"))
 
         # Formats
         self.format_dict = {"Legal": (8.5, 14), "legal": (8.5, 14),
@@ -76,11 +82,11 @@ class DatabaseExport:
         return str(soup)
 
     def create_html(self, display_headers, rows, open_file=True, save_file=False) -> str:
-        print(f"{datetime.datetime.now()}: creating {self.exportName} HTML file...")
+        print(f"{datetime.datetime.now()}: creating {self.escaped_export_name} HTML file...")
 
         # generate source html string from template and data
-        sourceHtml = DatabaseExport.render_without_request(self.template, tablename=self.exportName,
-                                                           header=display_headers, rows=rows)
+        sourceHtml = DatabaseExport.render_without_request(self.template, title=self.title,
+                                                           extratitle=self.extratitle, header=display_headers, rows=rows)
         # consolidate the html string with its external css references,
         # so any externally referenced css page(s) are not needed.
         sourceHtml = self.__consolidate_css_html(sourceHtml)
