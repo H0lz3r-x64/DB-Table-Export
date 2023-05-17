@@ -11,6 +11,7 @@ from sub.DB_Table_Export.ReportPopUp import ReportPopup
 def report_functionality(table: QTableWidget, report_name: str, report_type: REPORT_TYPES):
     template = None
     is_landscape = None
+    pdf_filename = ""
 
     if report_type == REPORT_TYPES.REPORT_TABLE:
         template = "report_template_files/TEMPLATE_TABLE_REPORT.html"
@@ -47,8 +48,8 @@ def report_functionality(table: QTableWidget, report_name: str, report_type: REP
     if result['pdf']:
         pdf_filename = dbExp.convert_html_to_pdf(is_landscape=is_landscape, scale=0.7, open_file=result['pdf'],
                                                  save_file=result['save'])
-
-    __success_msgbox__(result, html_filename, pdf_filename)
+    if result['save']:
+        __success_msgbox__(result, html_filename, pdf_filename)
 
 
 def __get_headers_from_table_widget__(table: Union[QTableWidget, QTableWidget]) -> List[str]:
