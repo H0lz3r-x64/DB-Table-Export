@@ -1,6 +1,7 @@
 import os
+from typing import Dict, Union, List
 
-from PyQt5.QtWidgets import QMessageBox, QTableWidget, QSpacerItem, QSizePolicy, QGridLayout
+from PyQt5.QtWidgets import QMessageBox, QTableWidget, QSpacerItem, QSizePolicy
 
 from sub.DB_Table_Export import REPORT_TYPES
 from sub.DB_Table_Export.DBExport import DatabaseExport
@@ -34,18 +35,39 @@ def report_functionality(table: QTableWidget, report_name: str, report_type: REP
 
     # Create a DatabaseExport object with the template, title and file names
     dbExp = DatabaseExport(template, report_name, download_path, download_path)
+
     # Get the table headers and rows from the table widget
-    headers = [table.horizontalHeaderItem(i).text() for i in range(table.columnCount())]
-    rows = [[table.item(row, col).text() if table.item(row, col) is not None else "" for col in range(
-            table.columnCount())] for row in range(table.rowCount())]
+    headers = __get_headers_from_table_widget__(table)
+    rows = __get_rows_from_table_widget__(table)
 
     # Create an HTML file from the template, headers and rows
     html_filename = dbExp.create_html(headers, rows, open_file=result['html'], save_file=result['save'])
     # Convert the HTML file to a PDF file with a given scale factor
 
     if result['pdf']:
-        pdf_filename = dbExp.convert_html_to_pdf(is_landscape=is_landscape, scale=0.7, open_file=result['pdf'], save_file=result['save'])
+        pdf_filename = dbExp.convert_html_to_pdf(is_landscape=is_landscape, scale=0.7, open_file=result['pdf'],
+                                                 save_file=result['save'])
 
+    __success_msgbox__(result, html_filename, pdf_filename)
+
+
+def __get_headers_from_table_widget__(table: Union[QTableWidget, QTableWidget]) -> List[str]:
+    headers = [table.horizontalHeaderItem(i).text() for i in range(table.columnCount())]
+    return headers
+
+
+def __get_rows_from_table_widget__(table: Union[QTableWidget, QTableWidget]) -> List[List[List[str]]]:
+    # This nested list comprehension gets the rows from the table,
+    # splits each cell in separate lines at a break line,
+    # and removes any row that has only empty strings in it
+    rows = [[[line.strip() for line in col.splitlines()] for col in row] for row in
+            [[table.item(r, c).text() if table.item(r, c) is not None else "" for c in range(
+                table.columnCount())] for r in range(table.rowCount())] if any(row)]
+
+    return rows
+
+
+def __success_msgbox__(result: Dict[str, bool], html_filename: str, pdf_filename: str) -> None:
     msg = QMessageBox()
     msg.setWindowTitle("Report Successful")
     msg.setIcon(QMessageBox.Information)
@@ -67,5 +89,3 @@ def report_functionality(table: QTableWidget, report_name: str, report_type: REP
     layout.addItem(horizontalSpacer, layout.rowCount(), 0, 1, layout.columnCount())
 
     x = msg.exec_()
-
-
