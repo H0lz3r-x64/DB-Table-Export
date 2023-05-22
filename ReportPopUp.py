@@ -42,6 +42,7 @@ class ReportPopup(QDialog):
         # Set the standard selection
         self.pdf_check.setCheckState(Qt.CheckState.Checked)
         self.save_check.setCheckState(Qt.CheckState.Checked)
+        self.result = None
 
     def ok_clicked(self):
         # Check if at least one option is selected
