@@ -3,15 +3,22 @@ from typing import Dict, Union, List
 
 from PyQt5.QtWidgets import QMessageBox, QTableWidget, QSpacerItem, QSizePolicy
 
+from other.database import Database
 from sub.DB_Table_Export import REPORT_TYPES
 from sub.DB_Table_Export.DBExport import DatabaseExport
 from sub.DB_Table_Export.ReportPopUp import ReportPopup
 
 
-def report_functionality(table: QTableWidget, report_name: str, report_type: REPORT_TYPES):
+def report_functionality(parent_object: object, table: QTableWidget, report_name: str, report_type: REPORT_TYPES):
     template = None
     is_landscape = None
     pdf_filename = ""
+
+    db = Database.get_instance(parent_object)
+    sql = "SELECT Familienname, Farbe from kat_ausbilder"
+    mycursor = db.select(sql)
+    fetch = mycursor.fetchall()
+    colors_dict = dict((key, value) for key, value in fetch)
 
     if report_type == REPORT_TYPES.REPORT_TABLE:
         template = "report_template_files/TEMPLATE_TABLE_REPORT.html"
@@ -41,8 +48,33 @@ def report_functionality(table: QTableWidget, report_name: str, report_type: REP
     headers = __get_headers_from_table_widget__(table)
     rows = __get_rows_from_table_widget__(table)
 
+    # Create a list of colors for each cell in each row based on a dictionary of colors
+    colors_list = []
+    for row in rows:
+        row_colors = []
+        for cell in row:
+            color = ""
+            cell_colors = []
+
+            if cell:
+                text = cell[0].lower()
+                for color_key in colors_dict.keys():
+                    if text.find(color_key.lower()) != -1:
+                        text = text.replace(color_key, "")
+                        cell_colors.append(colors_dict.get(color_key, "#663399"))
+
+                if 2 > len(cell_colors) > 0:
+                    color = f"background-color: {cell_colors[0]};"  # DEBUG color violet
+                elif len(cell_colors) > 1:
+                    color = f"background-image: linear-gradient(to bottom right, {','.join(cell_colors)});"
+
+            row_colors.append(color)
+
+        colors_list.append(row_colors)
+
+
     # Create an HTML file from the template, headers and rows
-    html_filename = dbExp.create_html(headers, rows, open_file=result['html'], save_file=result['save'])
+    html_filename = dbExp.create_html(headers, rows, colors_list, open_file=result['html'], save_file=result['save'])
     # Convert the HTML file to a PDF file with a given scale factor
 
     if result['pdf']:
