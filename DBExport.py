@@ -1,5 +1,5 @@
 import base64, os, jinja2, datetime, bs4
-from typing import Union
+from typing import Union, Collection
 
 from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.chrome.webdriver import WebDriver
@@ -81,12 +81,21 @@ class DatabaseExport:
 
         return str(soup)
 
-    def create_html(self, display_headers, rows, open_file=True, save_file=False) -> str:
+    def create_html(self, display_headers: Collection, rows: Collection, rows_addition_data: Collection, open_file=True,
+                    save_file=False) -> str:
         print(f"{datetime.datetime.now()}: creating {self.escaped_export_name} HTML file...")
 
+        # checking shape
+        print("checking shape")
+        if not self.__check_same_shape__(rows, rows_addition_data, 1):
+            raise TypeError("The collections have different shapes")
+
         # generate source html string from template and data
-        sourceHtml = DatabaseExport.render_without_request(self.template, title=self.title,
-                                                           extratitle=self.extratitle, header=display_headers, rows=rows)
+        sourceHtml = DatabaseExport.render_without_request(
+            self.template, title=self.title, extratitle=self.extratitle, header=display_headers,
+            rows=rows, rows_addition_data=rows_addition_data, zip=zip
+        )
+
         # consolidate the html string with its external css references,
         # so any externally referenced css page(s) are not needed.
         sourceHtml = self.__consolidate_css_html(sourceHtml)
@@ -204,3 +213,73 @@ class DatabaseExport:
 
         # Return the output path as a string
         return output_path
+
+    @staticmethod
+    def __check_same_shape__(collection1: Collection, collection2: Collection, depth: int = None) -> bool:
+        """Check if two collections have the same shape up to a certain depth.
+
+        The shape of a collection is defined by its length and
+        the length of its nested collections (if any).
+
+        Args:
+            collection1: A list or tuple.
+            collection2: A list or tuple.
+            depth: An optional integer indicating the maximum depth to check.
+                   If None, the function checks the shape of the entire collections.
+
+        Returns:
+            True if the collections have the same shape up to the given depth,
+            False otherwise.
+
+        Raises:
+            ValueError: If either collection is not a list or tuple,
+                        or if depth is not a positive integer or None.
+
+        Examples:
+            >>> __check_same_shape__([1, 2], [3, 4])
+            True
+            >>> __check_same_shape__([1, [2]], [3, [4]])
+            True
+            >>> __check_same_shape__([1, [2]], [3])
+            False
+            >>> __check_same_shape__([1], 2)
+            ValueError: Invalid collections
+            >>> __check_same_shape__([1, [2]], [3, [4]], depth=2)
+            True
+            >>> __check_same_shape__([1, [2]], [3, {4}], depth=2)
+            False
+            >>> __check_same_shape__([1, [2]], [3, [4]], depth=3)
+            True
+            >>> __check_same_shape__([1, [2]], [3], depth=1)
+            False
+            >>> __check_same_shape__([1, 2, [3, 4]], [5, 6, {7, 8}], depth=2)
+            False
+        """
+        # check if the collections are valid
+        if not isinstance(collection1, (list, tuple)) or not isinstance(collection2, (list, tuple)):
+            raise ValueError("Invalid collections")
+
+        # check if the depth is valid
+        if depth is not None and (not isinstance(depth, int) or depth < 0):
+            raise ValueError("Invalid depth")
+
+        # check if the collections are empty
+        if not collection1 or not collection2:
+            return False
+
+        # check if the collections have the same length
+        if len(collection1) != len(collection2):
+            return False
+
+        # check if the depth is zero
+        if depth == 0:
+            return True
+
+        # check if the collections have the same shape recursively up to the given depth
+        return all(__check_same_shape__(item1, item2, depth - 1 if depth is not None else None) if isinstance(item1, (
+        list, tuple)) and isinstance(item2, (list, tuple))
+                   else not isinstance(item1, (list, tuple)) ^ isinstance(item2, (list, tuple))
+                   for item1, item2 in zip(collection1, collection2))
+        # Note: The XOR operator (^) is used to check if the items have different types.
+        # This avoids raising an exception when one item is a nested collection and the other is not,
+        # and returns False as expected.
