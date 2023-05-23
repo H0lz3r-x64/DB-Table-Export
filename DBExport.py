@@ -236,23 +236,23 @@ class DatabaseExport:
                         or if depth is not a positive integer or None.
 
         Examples:
-            >>> __check_same_shape__([1, 2], [3, 4])
+            >>> DatabaseExport.__check_same_shape__([1, 2], [3, 4])
             True
-            >>> __check_same_shape__([1, [2]], [3, [4]])
+            >>> DatabaseExport.__check_same_shape__([1, [2]], [3, [4]])
             True
-            >>> __check_same_shape__([1, [2]], [3])
+            >>> DatabaseExport.__check_same_shape__([1, [2]], [3])
             False
-            >>> __check_same_shape__([1], 2)
+            >>> DatabaseExport.__check_same_shape__([1], 2)
             ValueError: Invalid collections
-            >>> __check_same_shape__([1, [2]], [3, [4]], depth=2)
+            >>> DatabaseExport.__check_same_shape__([1, [2]], [3, [4]], depth=2)
             True
-            >>> __check_same_shape__([1, [2]], [3, {4}], depth=2)
+            >>> DatabaseExport.__check_same_shape__([1, [2]], [3, {4}], depth=2)
             False
-            >>> __check_same_shape__([1, [2]], [3, [4]], depth=3)
+            >>> DatabaseExport.__check_same_shape__([1, [2]], [3, [4]], depth=3)
             True
-            >>> __check_same_shape__([1, [2]], [3], depth=1)
+            >>> DatabaseExport.__check_same_shape__([1, [2]], [3], depth=1)
             False
-            >>> __check_same_shape__([1, 2, [3, 4]], [5, 6, {7, 8}], depth=2)
+            >>> DatabaseExport.__check_same_shape__([1, 2, [3, 4]], [5, 6, {7, 8}], depth=2)
             False
         """
         # check if the collections are valid
@@ -276,8 +276,8 @@ class DatabaseExport:
             return True
 
         # check if the collections have the same shape recursively up to the given depth
-        return all(__check_same_shape__(item1, item2, depth - 1 if depth is not None else None) if isinstance(item1, (
-        list, tuple)) and isinstance(item2, (list, tuple))
+        return all(DatabaseExport.__check_same_shape__(item1, item2, depth - 1 if depth is not None else None) if
+                   isinstance(item1, (list, tuple)) and isinstance(item2, (list, tuple))
                    else not isinstance(item1, (list, tuple)) ^ isinstance(item2, (list, tuple))
                    for item1, item2 in zip(collection1, collection2))
         # Note: The XOR operator (^) is used to check if the items have different types.
