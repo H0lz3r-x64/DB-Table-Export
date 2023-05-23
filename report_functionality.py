@@ -1,4 +1,4 @@
-import os
+import os, holidays
 from typing import Dict, Union, List, Optional
 
 from PyQt5.QtWidgets import QMessageBox, QTableWidget, QSpacerItem, QSizePolicy
@@ -13,6 +13,7 @@ def report_functionality(parent_object: object, table: QTableWidget, report_name
     template = None
     is_landscape = None
     pdf_filename = ""
+    weekdays, year = None, None
 
     if report_type == REPORT_TYPES.REPORT_TABLE:
         template = "report_template_files/TEMPLATE_TABLE_REPORT.html"
@@ -22,12 +23,15 @@ def report_functionality(parent_object: object, table: QTableWidget, report_name
         is_landscape = True
 
         # check if the expected kwargs are present
-        if "weekdays" not in kwargs or "colnames" not in kwargs:
+        keys = {"weekdays", "year"}  # your set of keys
+        if not keys <= kwargs.keys():  # check if keys is a subset of kwargs.keys()
+
             # raise an exception if they are not
             raise ValueError("Missing required parameters for weekplan report type")
+
         # get the weekdays and colnames from kwargs
         weekdays = kwargs.get("weekdays")
-        colnames = kwargs.get("colnames")
+        year = kwargs.get("year")
 
     # Create and show a popup window for the report options
     popup = ReportPopup()
@@ -50,9 +54,11 @@ def report_functionality(parent_object: object, table: QTableWidget, report_name
     headers = __get_headers_from_table_widget__(table)
     rows = __get_rows_from_table_widget__(table)
     # TODO: fix holiday list, then find way to overwrite colors_list on grey cells in holiday_list
-    holiday_list = __get_holiday_from_table_widget__(table)
     color_dict = __get_color_dict__(parent_object)
     colors_list = __create_color_list__(table, color_dict)
+
+    if report_type == REPORT_TYPES.REPORT_WEEKPLAN:
+        __mark_AT_holidays__(rows, colors_list, weekdays, year)
 
     # Create an HTML file from the template, headers and rows
     html_filename = dbExp.create_html(headers, rows, colors_list, open_file=result['html'], save_file=result['save'])
@@ -63,6 +69,20 @@ def report_functionality(parent_object: object, table: QTableWidget, report_name
                                                  save_file=result['save'])
     if result['save']:
         __success_msgbox__(result, html_filename, pdf_filename)
+
+
+# Austrian holidays are determined and then marked in red in the weekly plan
+def __mark_AT_holidays__(rows: List[List[List[str]]], color_list: List[List[Optional[str]]],
+                         weekdays: List, year: int):
+
+    austria_holidays = holidays.AT(years=int(year))  # get holidays for the given year
+    color = "background-color: #D3D3D3;"
+
+    # Check if each weekday is a holiday and if so, make it red and the background gray
+    for j, day in enumerate(weekdays):
+        if day in austria_holidays:  # use membership test instead of iterating over items
+            for i in range(len(rows)):
+                color_list[i][j] = color
 
 
 def __get_color_dict__(parent_object: object):
@@ -88,9 +108,11 @@ def __create_color_list__(table: Union[QTableWidget, QTableWidget], color_dict: 
                         text = text.replace(color_key, "")
                         cell_colors.append(color_dict.get(color_key, "#663399"))  # DEBUG color violet: #663399
 
-                if 2 > len(cell_colors) > 0:
+                if len(cell_colors) < 1:
+                    color = f"background-color: #FFFFFF;"
+                elif len(cell_colors) < 2:
                     color = f"background-color: {cell_colors[0]};"
-                elif len(cell_colors) > 1:
+                else:
                     color = f"background-image: linear-gradient(to bottom right, {','.join(cell_colors)});"
 
             row.append(color)
