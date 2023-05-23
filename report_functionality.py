@@ -27,7 +27,7 @@ def report_functionality(parent_object: object, table: QTableWidget, report_name
         if not keys <= kwargs.keys():  # check if keys is a subset of kwargs.keys()
 
             # raise an exception if they are not
-            raise ValueError("Missing required parameters for weekplan report type")
+            raise ValueError("Missing required parameters for the weekplan report type")
 
         # get the weekdays and colnames from kwargs
         weekdays = kwargs.get("weekdays")
@@ -52,8 +52,7 @@ def report_functionality(parent_object: object, table: QTableWidget, report_name
 
     # Get the table headers and rows from the table widget
     headers = __get_headers_from_table_widget__(table)
-    rows = __get_rows_from_table_widget__(table)
-    # TODO: fix holiday list, then find way to overwrite colors_list on grey cells in holiday_list
+    rows = __get_rows_from_table_widget__(table, report_type)
     color_dict = __get_color_dict__(parent_object)
     colors_list = __create_color_list__(table, color_dict)
 
@@ -126,13 +125,23 @@ def __get_headers_from_table_widget__(table: Union[QTableWidget, QTableWidget]) 
     return headers
 
 
-def __get_rows_from_table_widget__(table: Union[QTableWidget, QTableWidget]) -> List[List[List[str]]]:
-    # This nested list comprehension gets the rows from the table,
-    # splits each cell in separate lines at a break line,
-    # and removes any row that has only empty strings in it
-    rows = [[[line.strip() for line in col.splitlines()] for col in row] for row in
-            [[table.item(r, c).text() if table.item(r, c) is not None else "" for c in range(
-                table.columnCount())] for r in range(table.rowCount())] if any(row)]
+def __get_rows_from_table_widget__(table: Union[QTableWidget, QTableWidget], report_type: REPORT_TYPES) -> \
+        List[List[List[str]]]:
+    rows = []
+    if report_type == REPORT_TYPES.REPORT_TABLE:
+        # This nested list comprehension gets the rows from the table,
+        # and removes any row that has only empty strings in it
+        rows = [row for row in
+                [[table.item(r, c).text() if table.item(r, c) is not None else "" for c in range(
+                    table.columnCount())] for r in range(table.rowCount())] if any(row)]
+
+    elif report_type == REPORT_TYPES.REPORT_WEEKPLAN:
+        # This nested list comprehension gets the rows from the table,
+        # splits each cell in separate lines at a break line,
+        # and removes any row that has only empty strings in it
+        rows = [[[line.strip() for line in col.splitlines()] for col in row] for row in
+                [[table.item(r, c).text() if table.item(r, c) is not None else "" for c in range(
+                    table.columnCount())] for r in range(table.rowCount())] if any(row)]
 
     return rows
 
