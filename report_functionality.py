@@ -1,5 +1,5 @@
 import os
-from typing import Dict, Union, List
+from typing import Dict, Union, List, Optional
 
 from PyQt5.QtWidgets import QMessageBox, QTableWidget, QSpacerItem, QSizePolicy
 
@@ -13,12 +13,6 @@ def report_functionality(parent_object: object, table: QTableWidget, report_name
     template = None
     is_landscape = None
     pdf_filename = ""
-
-    db = Database.get_instance(parent_object)
-    sql = "SELECT Familienname, Farbe from kat_ausbilder"
-    mycursor = db.select(sql)
-    fetch = mycursor.fetchall()
-    colors_dict = dict((key, value) for key, value in fetch)
 
     if report_type == REPORT_TYPES.REPORT_TABLE:
         template = "report_template_files/TEMPLATE_TABLE_REPORT.html"
@@ -47,31 +41,10 @@ def report_functionality(parent_object: object, table: QTableWidget, report_name
     # Get the table headers and rows from the table widget
     headers = __get_headers_from_table_widget__(table)
     rows = __get_rows_from_table_widget__(table)
-
-    # Create a list of colors for each cell in each row based on a dictionary of colors
-    colors_list = []
-    for row in rows:
-        row_colors = []
-        for cell in row:
-            color = ""
-            cell_colors = []
-
-            if cell:
-                text = cell[0].lower()
-                for color_key in colors_dict.keys():
-                    if text.find(color_key.lower()) != -1:
-                        text = text.replace(color_key, "")
-                        cell_colors.append(colors_dict.get(color_key, "#663399"))
-
-                if 2 > len(cell_colors) > 0:
-                    color = f"background-color: {cell_colors[0]};"  # DEBUG color violet
-                elif len(cell_colors) > 1:
-                    color = f"background-image: linear-gradient(to bottom right, {','.join(cell_colors)});"
-
-            row_colors.append(color)
-
-        colors_list.append(row_colors)
-
+    # TODO: fix holiday list, then find way to overwrite colors_list on grey cells in holiday_list
+    holiday_list = __get_holiday_from_table_widget__(table)
+    color_dict = __get_color_dict__(parent_object)
+    colors_list = __create_color_list__(table, color_dict)
 
     # Create an HTML file from the template, headers and rows
     html_filename = dbExp.create_html(headers, rows, colors_list, open_file=result['html'], save_file=result['save'])
@@ -82,6 +55,40 @@ def report_functionality(parent_object: object, table: QTableWidget, report_name
                                                  save_file=result['save'])
     if result['save']:
         __success_msgbox__(result, html_filename, pdf_filename)
+
+
+def __get_color_dict__(parent_object: object):
+    db = Database.get_instance(parent_object)
+    sql = "SELECT Familienname, Farbe from kat_ausbilder"
+    cursor = db.select(sql)
+    fetch = cursor.fetchall()
+    colors_dict = dict((key, value) for key, value in fetch)
+    return colors_dict
+
+
+def __create_color_list__(table: Union[QTableWidget, QTableWidget], color_dict: dict):
+    rows = []
+    for r in range(table.rowCount()):
+        row = []
+        for c in range(table.columnCount()):
+            color = ""
+            cell_colors = []
+            if table.item(r, c) is not None:
+                text = table.item(r, c).text().lower()
+                for color_key in color_dict.keys():
+                    if text.find(color_key.lower()) != -1:
+                        text = text.replace(color_key, "")
+                        cell_colors.append(color_dict.get(color_key, "#663399"))  # DEBUG color violet: #663399
+
+                if 2 > len(cell_colors) > 0:
+                    color = f"background-color: {cell_colors[0]};"
+                elif len(cell_colors) > 1:
+                    color = f"background-image: linear-gradient(to bottom right, {','.join(cell_colors)});"
+
+            row.append(color)
+        if any(row):
+            rows.append(row)
+    return rows
 
 
 def __get_headers_from_table_widget__(table: Union[QTableWidget, QTableWidget]) -> List[str]:
@@ -97,6 +104,22 @@ def __get_rows_from_table_widget__(table: Union[QTableWidget, QTableWidget]) -> 
             [[table.item(r, c).text() if table.item(r, c) is not None else "" for c in range(
                 table.columnCount())] for r in range(table.rowCount())] if any(row)]
 
+    return rows
+
+
+def __get_holiday_from_table_widget__(table: Union[QTableWidget, QTableWidget]) -> List[List[Optional[str]]]:
+    rows = []
+    for r in range(table.rowCount()):
+        row = []
+        for c in range(table.columnCount()):
+            if table.item(r, c) is not None:
+                hex_val = table.item(r, c).background().color().name()
+                col = f"background-color: {hex_val};"
+            else:
+                col = ""
+            row.append(col)
+        # if any(row):
+        rows.append(row)
     return rows
 
 
