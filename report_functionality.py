@@ -9,7 +9,7 @@ from sub.DB_Table_Export.DBExport import DatabaseExport
 from sub.DB_Table_Export.ReportPopUp import ReportPopup
 
 
-def report_functionality(parent_object: object, table: QTableWidget, report_name: str, report_type: REPORT_TYPES):
+def report_functionality(parent_object: object, table: QTableWidget, report_name: str, report_type: REPORT_TYPES, **kwargs):
     template = None
     is_landscape = None
     pdf_filename = ""
@@ -20,6 +20,14 @@ def report_functionality(parent_object: object, table: QTableWidget, report_name
     elif report_type == REPORT_TYPES.REPORT_WEEKPLAN:
         template = "report_template_files/TEMPLATE_WEEKPLAN_REPORT.html"
         is_landscape = True
+
+        # check if the expected kwargs are present
+        if "weekdays" not in kwargs or "colnames" not in kwargs:
+            # raise an exception if they are not
+            raise ValueError("Missing required parameters for weekplan report type")
+        # get the weekdays and colnames from kwargs
+        weekdays = kwargs.get("weekdays")
+        colnames = kwargs.get("colnames")
 
     # Create and show a popup window for the report options
     popup = ReportPopup()
