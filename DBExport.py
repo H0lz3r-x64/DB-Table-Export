@@ -32,7 +32,13 @@ class DatabaseExport:
         self.extratitle = ""
         if len(splitup) > 1:
             self.extratitle = splitup[1]
-        self.escaped_export_name = export_name.replace("<split>", "_")
+
+        # escape custom split tag
+        self.escaped_export_name = export_name.replace("<split>", " ")
+        # escape bad characters
+        bad_chars = "\\/:*?\"<>|"
+        for c in bad_chars:
+            self.escaped_export_name = self.escaped_export_name.replace(c, "_")
 
         if path_to_output_html == "":
             self.output_html = os.path.abspath(f"{export_name}_Export_{datetime.date.today()}.html")
