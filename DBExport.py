@@ -13,7 +13,18 @@ from selenium.webdriver.chrome.options import Options
 
 
 class DatabaseExport:
-    def __init__(self, template: str, export_name: str, path_to_output_html="", path_to_output_pdf=""):
+    def __init__(self, template: str, export_name: str, path_to_output_html, path_to_output_pdf):
+        """
+        Initializes a DatabaseExport object with the given parameters.
+
+        Args:
+            template (str): Path to the template file used for the export.
+            export_name (str): The name of the export, which can contain a <split> token to separate the title and the extra title.
+            path_to_output_html (str): The path to save the output HTML file.
+            path_to_output_pdf (str): The path to save the output PDF file.
+
+
+        """
         # Filenames
         self.template = template
         splitup = export_name.split("<split>")
@@ -27,6 +38,7 @@ class DatabaseExport:
             self.output_html = os.path.abspath(f"{export_name}_Export_{datetime.date.today()}.html")
         else:
             self.output_html = os.path.abspath(os.path.join(path_to_output_html, f"{self.escaped_export_name}.html"))
+
         if path_to_output_pdf == "":
             self.output_pdf = os.path.abspath(f"{export_name}_export_{datetime.date.today()}.pdf")
         else:
@@ -83,8 +95,25 @@ class DatabaseExport:
 
     def create_html(self, display_headers: Collection, rows: Collection, rows_addition_data: Collection, open_file=True,
                     save_file=False) -> str:
-        print(f"{datetime.datetime.now()}: creating {self.escaped_export_name} HTML file...")
+        """
+        Creates an HTML file from the given data and template, and optionally opens and saves it.
 
+        Args:
+            display_headers (Collection): A collection of strings to use as the headers of the HTML table.
+            rows (Collection): A collection of collections of strings to use as the data of the HTML table.
+            rows_addition_data (Collection): A collection of collections of strings to use as the additional data of the HTML table, for now only for custom cell background colors
+            open_file (bool, optional): Whether to open the HTML file after creating it. Defaults to True.
+            save_file (bool, optional): Whether to save the HTML file to the output path. Defaults to False.
+
+        Returns:
+            str: The absolute path to the output HTML file.
+
+        Raises:
+            TypeError:
+                If the rows and rows_addition_data collections have different shapes.
+        """
+
+        print(f"{datetime.datetime.now()}: creating {self.escaped_export_name} HTML file...")
         # checking shape
         print("checking shape")
         if not self.__check_same_shape__(rows, rows_addition_data, 1):
@@ -120,9 +149,27 @@ class DatabaseExport:
 
     def convert_html_to_pdf(self, is_landscape=False, print_background=True, paper_format="a4",
                             scale=0.4, open_file=True, save_file=False) -> Union[str, None]:
+        """
+        Converts the HTML file to a PDF file using a headless Chrome browser, and optionally opens and saves it.
+
+        Note: This method assumes that the create_html method has been called before to create the HTML file.
+
+        Args:
+            is_landscape (bool, optional): Whether to use landscape orientation for the PDF file. Defaults to False.
+            print_background (bool, optional): Whether to print the background graphics of the HTML file. Defaults to True.
+            paper_format (str, optional): The paper format to use for the PDF file. Must be one of the keys in the format_dict attribute. Defaults to "a4".
+            scale (float, optional): The scale factor to use for the PDF file. Must be between 0 and 1. Defaults to 0.4.
+            open_file (bool, optional): Whether to open the PDF file after creating it. Defaults to True.
+            save_file (bool, optional): Whether to save the PDF file to the output path. Defaults to False.
+
+        Returns:
+            Union[str, None]: The absolute path to the output PDF file, or None if the conversion failed.
+
+        """
         print(f"{datetime.datetime.now()}: converting HTML to PDF...")
 
         # chrome binary options
+
         options = Options()
         options.add_argument("--headless")
         options.add_argument("--window-size=1920,1080")
