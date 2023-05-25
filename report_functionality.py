@@ -10,7 +10,7 @@ from sub.DB_Table_Export.ReportPopUp import ReportPopup
 
 
 def report_functionality(parent_object: object, table: QTableWidget, report_name: str, report_type: REPORT_TYPES,
-                         scale=7.0, **kwargs):
+                         scale=0.7, **kwargs):
     template = None
     is_landscape = None
     pdf_filename = ""
