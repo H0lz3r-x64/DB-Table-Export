@@ -99,8 +99,8 @@ class DatabaseExport:
 
         return str(soup)
 
-    def create_html(self, display_headers: Collection, rows: Collection, rows_addition_data: Collection, open_file=True,
-                    save_file=False) -> str:
+    def create_html(self, display_headers: Collection, rows: Collection, rows_addition_data: Collection = None,
+                    open_file=True, save_file=False) -> str:
         """
         Creates an HTML file from the given data and template, and optionally opens and saves it.
 
@@ -122,7 +122,7 @@ class DatabaseExport:
         print(f"{datetime.datetime.now()}: creating {self.escaped_export_name} HTML file...")
         # checking shape
         print("checking shape")
-        if not self.__check_same_shape__(rows, rows_addition_data, 1):
+        if rows_addition_data and not self.__check_same_shape__(rows, rows_addition_data, 1):
             raise TypeError("The collections have different shapes")
 
         # generate source html string from template and data

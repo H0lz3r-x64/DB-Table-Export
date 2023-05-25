@@ -1,7 +1,8 @@
 import os, holidays
 from typing import Dict, Union, List, Optional
 
-from PyQt5.QtWidgets import QMessageBox, QTableWidget, QSpacerItem, QSizePolicy
+from PyQt5.QtCore import Qt
+from PyQt5.QtWidgets import QMessageBox, QTableWidget, QSpacerItem, QSizePolicy, QCheckBox, QTableWidgetItem
 
 from other.database import Database
 from sub.DB_Table_Export import REPORT_TYPES
@@ -15,6 +16,7 @@ def report_functionality(parent_object: object, table: QTableWidget, report_name
     is_landscape = None
     pdf_filename = ""
     weekdays, year = None, None
+    colors_list = []
 
     if report_type == REPORT_TYPES.REPORT_TABLE:
         template = "report_template_files/TEMPLATE_TABLE_REPORT.html"
@@ -54,10 +56,10 @@ def report_functionality(parent_object: object, table: QTableWidget, report_name
     # Get the table headers and rows from the table widget
     headers = __get_headers_from_table_widget__(table)
     rows = __get_rows_from_table_widget__(table, report_type)
-    color_dict = __get_color_dict__(parent_object)
-    colors_list = __create_color_list__(table, color_dict)
 
     if report_type == REPORT_TYPES.REPORT_WEEKPLAN:
+        color_dict = __get_color_dict__(parent_object)
+        colors_list = __create_color_list__(table, color_dict)
         __mark_AT_holidays__(rows, colors_list, weekdays, year)
 
     # Create an HTML file from the template, headers and rows
@@ -74,7 +76,6 @@ def report_functionality(parent_object: object, table: QTableWidget, report_name
 # Austrian holidays are determined and then marked in red in the weekly plan
 def __mark_AT_holidays__(rows: List[List[List[str]]], color_list: List[List[Optional[str]]],
                          weekdays: List, year: int):
-
     austria_holidays = holidays.AT(years=int(year))  # get holidays for the given year
     color = "background-color: #D3D3D3;"
 
@@ -126,23 +127,47 @@ def __get_headers_from_table_widget__(table: Union[QTableWidget, QTableWidget]) 
     return headers
 
 
-def __get_rows_from_table_widget__(table: Union[QTableWidget, QTableWidget], report_type: REPORT_TYPES) -> \
+def __get_rows_from_table_widget__(table: Union[QTableWidget, QTableWidget], report_type: REPORT_TYPES) ->\
         List[List[List[str]]]:
     rows = []
+    # If the report type is REPORT_TABLE
     if report_type == REPORT_TYPES.REPORT_TABLE:
-        # This nested list comprehension gets the rows from the table,
-        # and removes any row that has only empty strings in it
-        rows = [row for row in
-                [[table.item(r, c).text() if table.item(r, c) is not None else "" for c in range(
-                    table.columnCount())] for r in range(table.rowCount())] if any(row)]
+        # Iterate over each row in the table
+        for r in range(table.rowCount()):
+            row = []
+            # Iterate over each column in the table
+            for c in range(table.columnCount()):
+                item = table.item(r, c)
+                # If the item text is not empty
+                if item.text() != '':
+                    row.append(item.text())
+                # If the item text is empty
+                else:
+                    # Check if cell is actually empty or a type of checkbox
+                    data = item.data(Qt.ItemDataRole.CheckStateRole)
+                    row.append("☐" if data == 0 else "▣" if data == 1 else "☑" if data == 2 else "")
+            # If there is any data in the row, append it to rows
+            if any(row):
+                rows.append(row)
 
+    # If the report type is REPORT_WEEKPLAN
     elif report_type == REPORT_TYPES.REPORT_WEEKPLAN:
-        # This nested list comprehension gets the rows from the table,
-        # splits each cell in separate lines at a break line,
-        # and removes any row that has only empty strings in it
-        rows = [[[line.strip() for line in col.splitlines()] for col in row] for row in
-                [[table.item(r, c).text() if table.item(r, c) is not None else "" for c in range(
-                    table.columnCount())] for r in range(table.rowCount())] if any(row)]
+        rows = []
+        # Iterate over each row in the table
+        for r in range(table.rowCount()):
+            row = []  # Iterate over each column in the table
+            for c in range(table.columnCount()):
+                if table.item(r, c) is not None:
+                    col = table.item(r, c).text()
+                else:
+                    col = ""
+                # Split the cell content into individual lines on the linebreak and store them
+                lines = col.splitlines()
+                lines_stripped = [line.strip() for line in lines]
+                row.append(lines_stripped)
+            # If there is any data in the row, append it to rows
+            if any(row):
+                rows.append(row)
 
     return rows
 
