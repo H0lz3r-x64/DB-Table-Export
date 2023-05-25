@@ -8,20 +8,20 @@ class ReportPopup(QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
         # Set the window title and size
-        self.setWindowTitle("Report Options")
+        self.setWindowTitle("Report Optionen")
         self.resize(300, 200)
         # Create the checkboxes
         self.pdf_check = QCheckBox("PDF")
         self.html_check = QCheckBox("HTML")
-        self.save_check = QCheckBox("Save in downloads")
+        self.save_check = QCheckBox("In Downloads speichern")
         # Create the buttons
-        self.ok_button = QPushButton("Ok")
-        self.cancel_button = QPushButton("Cancel")
+        self.ok_button = QPushButton("Fortfahren")
+        self.cancel_button = QPushButton("Abbrechen")
         # Connect the buttons to their functions
         self.ok_button.clicked.connect(self.ok_clicked)
         self.cancel_button.clicked.connect(self.cancel_clicked)
         # Create the labels
-        self.title_label = QLabel("Select one or more options to generate reports:")
+        self.title_label = QLabel("Wählen Sie zumindest ein Report-Format aus:")
         self.message_label = QLabel("")
         # Create the layouts
         self.main_layout = QVBoxLayout()
@@ -48,7 +48,7 @@ class ReportPopup(QDialog):
         # Check if at least one option is selected
         if not (self.pdf_check.isChecked() or self.html_check.isChecked()):
             # Display an error message
-            self.message_label.setText("Please select at least one report format.")
+            self.message_label.setText("Bitte wählen Sie mindestens ein Report-Format aus.")
             return
         # Get the selected options as a dictionary
         options = {
