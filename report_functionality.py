@@ -9,7 +9,8 @@ from sub.DB_Table_Export.DBExport import DatabaseExport
 from sub.DB_Table_Export.ReportPopUp import ReportPopup
 
 
-def report_functionality(parent_object: object, table: QTableWidget, report_name: str, report_type: REPORT_TYPES, **kwargs):
+def report_functionality(parent_object: object, table: QTableWidget, report_name: str, report_type: REPORT_TYPES,
+                         scale=7.0, **kwargs):
     template = None
     is_landscape = None
     pdf_filename = ""
@@ -35,7 +36,7 @@ def report_functionality(parent_object: object, table: QTableWidget, report_name
 
     # Create and show a popup window for the report options
     popup = ReportPopup()
-    x = popup.exec_()
+    popup.exec_()
 
     # Get the result dictionary from the popup window
     result = popup.result
@@ -64,7 +65,7 @@ def report_functionality(parent_object: object, table: QTableWidget, report_name
     # Convert the HTML file to a PDF file with a given scale factor
 
     if result['pdf']:
-        pdf_filename = dbExp.convert_html_to_pdf(is_landscape=is_landscape, scale=0.7, open_file=result['pdf'],
+        pdf_filename = dbExp.convert_html_to_pdf(is_landscape=is_landscape, scale=scale, open_file=result['pdf'],
                                                  save_file=result['save'])
     if result['save']:
         __success_msgbox__(result, html_filename, pdf_filename)
