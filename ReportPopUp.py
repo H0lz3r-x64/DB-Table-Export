@@ -1,5 +1,6 @@
 # Import PyQt5 modules
-from PyQt5.QtWidgets import QDialog, QCheckBox, QPushButton, QLabel, QVBoxLayout, QHBoxLayout
+from PyQt5.QtGui import QFont
+from PyQt5.QtWidgets import QDialog, QCheckBox, QPushButton, QLabel, QVBoxLayout, QHBoxLayout, QSpacerItem, QSizePolicy
 from PyQt5.QtCore import Qt
 
 
@@ -9,6 +10,10 @@ class ReportPopup(QDialog):
         super().__init__(parent)
         # Set the window title and size
         self.setWindowTitle("Report Optionen")
+        custom_font = QFont()
+        custom_font.setWeight(38)
+        # Styling font size
+        # self.setStyleSheet("QLabel{font-size: 11pt;} QCheckBox{font-size: 9pt;} QPushButton{font-size: 9pt;}")
         self.resize(300, 200)
         # Create the checkboxes
         self.pdf_check = QCheckBox("PDF")
@@ -30,6 +35,7 @@ class ReportPopup(QDialog):
         # Add the widgets to the layouts
         self.check_layout.addWidget(self.html_check)
         self.check_layout.addWidget(self.pdf_check)
+        self.check_layout.addSpacing(50)
         self.check_layout.addWidget(self.save_check)
         self.button_layout.addWidget(self.ok_button)
         self.button_layout.addWidget(self.cancel_button)
