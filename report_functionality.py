@@ -2,7 +2,7 @@ import os, holidays
 from typing import Dict, Union, List, Optional
 
 from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QMessageBox, QTableWidget, QSpacerItem, QSizePolicy, QCheckBox, QTableWidgetItem
+from PyQt5.QtWidgets import QMessageBox, QTableWidget, QSpacerItem, QSizePolicy
 
 from other.database import Database
 from sub.DB_Table_Export import REPORT_TYPES
@@ -11,16 +11,14 @@ from sub.DB_Table_Export.ReportPopUp import ReportPopup
 
 
 def report_functionality(parent_object: object, table: QTableWidget, report_name: str, report_type: REPORT_TYPES,
-                         scale=0.7, **kwargs):
+                         scale: float = None, is_landscape: bool = None, **kwargs):
     template = None
-    is_landscape = None
     pdf_filename = ""
     weekdays, year = None, None
     colors_list = []
 
     if report_type == REPORT_TYPES.REPORT_TABLE:
         template = "report_template_files/TEMPLATE_TABLE_REPORT.html"
-        is_landscape = False
     elif report_type == REPORT_TYPES.REPORT_WEEKPLAN:
         template = "report_template_files/TEMPLATE_WEEKPLAN_REPORT.html"
         is_landscape = True
@@ -127,7 +125,7 @@ def __get_headers_from_table_widget__(table: Union[QTableWidget, QTableWidget]) 
     return headers
 
 
-def __get_rows_from_table_widget__(table: Union[QTableWidget, QTableWidget], report_type: REPORT_TYPES) ->\
+def __get_rows_from_table_widget__(table: Union[QTableWidget, QTableWidget], report_type: REPORT_TYPES) -> \
         List[List[List[str]]]:
     rows = []
     # If the report type is REPORT_TABLE
@@ -138,14 +136,19 @@ def __get_rows_from_table_widget__(table: Union[QTableWidget, QTableWidget], rep
             # Iterate over each column in the table
             for c in range(table.columnCount()):
                 item = table.item(r, c)
+                # If item is None
+                if not item:
+                    row.append("")
+                    continue
                 # If the item text is not empty
                 if item.text() != '':
                     row.append(item.text())
+                    continue
+
                 # If the item text is empty
-                else:
-                    # Check if cell is actually empty or a type of checkbox
-                    data = item.data(Qt.ItemDataRole.CheckStateRole)
-                    row.append("☐" if data == 0 else "▣" if data == 1 else "☑" if data == 2 else "")
+                data = item.data(Qt.ItemDataRole.CheckStateRole)
+                # Check if cell is actually empty or a type of checkbox
+                row.append("☐" if data == 0 else "▣" if data == 1 else "☑" if data == 2 else "")
             # If there is any data in the row, append it to rows
             if any(row):
                 rows.append(row)
@@ -169,22 +172,6 @@ def __get_rows_from_table_widget__(table: Union[QTableWidget, QTableWidget], rep
             if any(row):
                 rows.append(row)
 
-    return rows
-
-
-def __get_holiday_from_table_widget__(table: Union[QTableWidget, QTableWidget]) -> List[List[Optional[str]]]:
-    rows = []
-    for r in range(table.rowCount()):
-        row = []
-        for c in range(table.columnCount()):
-            if table.item(r, c) is not None:
-                hex_val = table.item(r, c).background().color().name()
-                col = f"background-color: {hex_val};"
-            else:
-                col = ""
-            row.append(col)
-        # if any(row):
-        rows.append(row)
     return rows
 
 
