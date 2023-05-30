@@ -153,18 +153,18 @@ class DatabaseExport:
         # return path
         return self.output_html
 
-    def convert_html_to_pdf(self, is_landscape=False, print_background=True, paper_format="a4",
-                            scale=0.4, open_file=True, save_file=False) -> Union[str, None]:
+    def convert_html_to_pdf(self, is_landscape=None, print_background=True, paper_format="a4",
+                            scale=None, open_file=True, save_file=False) -> Union[str, None]:
         """
         Converts the HTML file to a PDF file using a headless Chrome browser, and optionally opens and saves it.
 
         Note: This method assumes that the create_html method has been called before to create the HTML file.
 
         Args:
-            is_landscape (bool, optional): Whether to use landscape orientation for the PDF file. Defaults to False.
+            is_landscape (bool, optional): Whether to use landscape orientation for the PDF file. When None, get's calculated. Defaults to None.
             print_background (bool, optional): Whether to print the background graphics of the HTML file. Defaults to True.
             paper_format (str, optional): The paper format to use for the PDF file. Must be one of the keys in the format_dict attribute. Defaults to "a4".
-            scale (float, optional): The scale factor to use for the PDF file. Must be between 0 and 1. Defaults to 0.4.
+            scale (float, optional): The scale factor to use for the PDF file. Must be between 0.1 and 2. When None, get's calculated. Defaults to None.
             open_file (bool, optional): Whether to open the PDF file after creating it. Defaults to True.
             save_file (bool, optional): Whether to save the PDF file to the output path. Defaults to False.
 
@@ -206,8 +206,39 @@ class DatabaseExport:
             print("    Aborting...")
             return None
 
-        # set parameters for pdf conversion
+        # calculate params if None is passed
+        if is_landscape is None or scale is None:
+            # get the size of the table element
+            content = driver.find_element(By.CLASS_NAME, "content")
+            content_size = content.size
+            # get width and height and add margin
+            content_width = content_size["width"] + (15 * 2)
+            content_height = content_size["height"] + (15 * 2)
 
+            if is_landscape is None:
+                if content_width > content_height:
+                    is_landscape = True
+                else:
+                    is_landscape = False
+
+            # add "cutoff safety" spacing of 10% the width
+            content_width += (content_width * 0.10)
+
+            # get the paper format width or height depending on the orientation, in pixels
+            # assuming 96 DPI and paper size in inches
+            paper_width = self.format_dict[paper_format][1 if is_landscape else 0] * 96
+
+            # calculate the scale factor based on the ratio of table size and paper size
+            # assuming landscape orientation and some margin
+            calculated_scale = (paper_width - 20) / content_width
+
+            # clamp the scale factor between 0.1 and 2.0
+            calculated_scale = max(0.1, min(2.0, calculated_scale))
+
+            if scale is None:
+                scale = calculated_scale
+
+        # set parameters for pdf conversion
         params = {'landscape': is_landscape, 'printBackground': print_background, 'scale': scale,
                   'paperWidth': self.format_dict[paper_format][0], 'paperHeight': self.format_dict[paper_format][1]}
 
