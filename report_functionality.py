@@ -1,4 +1,6 @@
+import fnmatch
 import os, holidays
+import re
 from typing import Dict, Union, List, Optional
 
 from PyQt5.QtCore import Qt
@@ -19,6 +21,7 @@ def report_functionality(parent_object: object, table: QTableWidget, report_name
 
     if report_type == REPORT_TYPES.REPORT_TABLE:
         template = "report_template_files/TEMPLATE_TABLE_REPORT.html"
+
     elif report_type == REPORT_TYPES.REPORT_WEEKPLAN:
         template = "report_template_files/TEMPLATE_WEEKPLAN_REPORT.html"
         is_landscape = True
@@ -55,9 +58,12 @@ def report_functionality(parent_object: object, table: QTableWidget, report_name
     headers = __get_headers_from_table_widget__(table)
     rows = __get_rows_from_table_widget__(table, report_type)
 
+    # Colour table
+    color_dict = __get_color_dict__(parent_object)
+    colors_list = __create_color_list__(table, color_dict)
+
+    # Mark holidays on WEEKPLAN report type
     if report_type == REPORT_TYPES.REPORT_WEEKPLAN:
-        color_dict = __get_color_dict__(parent_object)
-        colors_list = __create_color_list__(table, color_dict)
         __mark_AT_holidays__(rows, colors_list, weekdays, year)
 
     # Create an HTML file from the template, headers and rows
@@ -102,11 +108,22 @@ def __create_color_list__(table: Union[QTableWidget, QTableWidget], color_dict: 
             cell_colors = []
             if table.item(r, c) is not None:
                 text = table.item(r, c).text().lower()
-                for color_key in color_dict.keys():
-                    if text.find(color_key.lower()) != -1:
-                        text = text.replace(color_key, "")
-                        cell_colors.append(color_dict.get(color_key, "#663399"))  # DEBUG color violet: #663399
+                es = text
+                found_hex_values = re.findall("(#[\\da-fA-F]{6})", text)
+                # search for hex values in text
+                for hex_val in found_hex_values:
+                    cell_colors.append(hex_val)
+                    continue
 
+                # if no hex values found search for instructor names
+                if not cell_colors:
+                    for color_key in color_dict.keys():
+                        # TODO better pattern matching
+                        if text.find(color_key.lower()) != -1:
+                            text = text.replace(color_key, "")
+                            cell_colors.append(color_dict.get(color_key, "#663399"))  # DEBUG color violet: #663399
+
+                # evaluate formatted background color
                 if len(cell_colors) < 1:
                     color = f"background-color: #FFFFFF;"
                 elif len(cell_colors) < 2:
