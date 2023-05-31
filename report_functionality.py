@@ -17,7 +17,6 @@ def report_functionality(parent_object: object, table: QTableWidget, report_name
     template = None
     pdf_filename = ""
     weekdays, year = None, None
-    colors_list = []
 
     if report_type == REPORT_TYPES.REPORT_TABLE:
         template = "report_template_files/TEMPLATE_TABLE_REPORT.html"
@@ -108,8 +107,8 @@ def __create_color_list__(table: Union[QTableWidget, QTableWidget], color_dict: 
             cell_colors = []
             if table.item(r, c) is not None:
                 text = table.item(r, c).text().lower()
-                es = text
-                found_hex_values = re.findall("(#[\\da-fA-F]{6})", text)
+                # regex for 3 or 6 digit hex color
+                found_hex_values = re.findall(r"(#[\da-fA-F]{3,6})", text)
                 # search for hex values in text
                 for hex_val in found_hex_values:
                     cell_colors.append(hex_val)
