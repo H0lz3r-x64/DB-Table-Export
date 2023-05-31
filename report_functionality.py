@@ -117,9 +117,11 @@ def __create_color_list__(table: Union[QTableWidget, QTableWidget], color_dict: 
                 # if no hex values found search for instructor names
                 if not cell_colors:
                     for color_key in color_dict.keys():
-                        # TODO better pattern matching
-                        if text.find(color_key.lower()) != -1:
+                        tex = text.replace("\n", " ")
+                        pattern = re.compile(fr"[\s/\\]{color_key.lower()}[\s/\\]")
+                        if pattern.search(tex):
                             text = text.replace(color_key, "")
+                            print("uff: ", color_dict.get(color_key, "#663399"))
                             cell_colors.append(color_dict.get(color_key, "#663399"))  # DEBUG color violet: #663399
 
                 # evaluate formatted background color
