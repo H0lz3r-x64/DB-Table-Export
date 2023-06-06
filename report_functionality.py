@@ -66,12 +66,13 @@ def report_functionality(parent_object: object, table: QTableWidget, report_name
         __mark_AT_holidays__(rows, colors_list, weekdays, year)
 
     # Create an HTML file from the template, headers and rows
-    html_filename = dbExp.create_html(headers, rows, colors_list, open_file=result['html'], save_file=result['save'])
+    html_filename = dbExp.create_html(headers, rows, colors_list, open_file=result['html'],
+                                      save_file=(result['html'] and result['save']))
     # Convert the HTML file to a PDF file with a given scale factor
 
     if result['pdf']:
         pdf_filename = dbExp.convert_html_to_pdf(is_landscape=is_landscape, scale=scale, open_file=result['pdf'],
-                                                 save_file=result['save'])
+                                                 save_file=(result['pdf'] and result['save']))
     if result['save']:
         __success_msgbox__(result, html_filename, pdf_filename)
 
