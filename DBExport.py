@@ -1,15 +1,16 @@
-import base64, os, jinja2, datetime, bs4
+import base64, os, jinja2, datetime, bs4, sys
 from typing import Union, Collection
 
+import chromedriver_autoinstaller
 from selenium.common.exceptions import TimeoutException
-from selenium.webdriver.chrome.webdriver import WebDriver
 from selenium.webdriver.common.by import By
-from webdrivermanager.chrome import ChromeDriverManager
 from selenium.webdriver.chrome.service import Service
 from selenium import webdriver
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.chrome.options import Options
+from subprocess import CREATE_NO_WINDOW
+import definitions
 
 
 class DatabaseExport:
@@ -25,6 +26,7 @@ class DatabaseExport:
 
 
         """
+
         # Filenames
         self.template = template
         splitup = export_name.split("<split>")
@@ -174,27 +176,29 @@ class DatabaseExport:
         """
         print(f"{datetime.datetime.now()}: converting HTML to PDF...")
 
-        # chrome binary options
-
+        # define chromedriver options
         options = Options()
-        options.add_argument("--headless")
+        options.add_argument("--headless=new")
         options.add_argument("--window-size=1920,1080")
         options.add_argument('--no-sandbox')
         options.add_argument('--disable-dev-shm-usage')
+        options.add_argument("--log-level=3")
 
-        driver = WebDriver
-        # get driver, search for existing one or download it
-        try:
-            driver = webdriver.Chrome(service=Service(), options=options)
-            print("    chromedriver in PATH found")
-        except Exception as e:
-            print(e)
-            serv = ChromeDriverManager().download_and_install()
-            for i in range(len(serv)):
-                driver = webdriver.Chrome(service=Service(serv[i]), options=options)
-            print("    no local driver found, installed driver")
+        # get the accurate chromedriver path (needed to do like this for the compiled exe version)
+        chromedriver_path = self.__resource_path__('./tmp_files/drivers/')
 
-        # set current site to html file
+        # install or update the chromedriver if needed
+        chromedriver_autoinstaller.install(cwd=False, path=chromedriver_path)
+
+        # create the chrome_service and set flags appropriately
+        chrome_service = Service(chromedriver_path + "chromedriver.exe", log_path=os.devnull)
+        chrome_service.creation_flags = CREATE_NO_WINDOW
+
+        # finally create our driver object
+        driver = webdriver.Chrome(service=chrome_service, options=options)
+        print("    chromedriver in PATH found")
+
+        # set current site to the generated html file
         driver.get(os.path.abspath(self.tmp_html_path))
 
         # wait for it to load
@@ -367,3 +371,9 @@ class DatabaseExport:
         # Note: The XOR operator (^) is used to check if the items have different types.
         # This avoids raising an exception when one item is a nested collection and the other is not,
         # and returns False as expected.
+
+    @staticmethod
+    def __resource_path__(relative_path):
+        """ Get absolute path to resource, works for dev and for PyInstaller """
+        base_path = getattr(sys, '_MEIPASS', definitions.project_root)
+        return os.path.normpath(os.path.join(base_path, relative_path))
