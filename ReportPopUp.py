@@ -1,15 +1,6 @@
 # Import PyQt5 modules
 from PyQt5.QtGui import QFont
-from PyQt5.QtWidgets import (
-    QDialog,
-    QCheckBox,
-    QPushButton,
-    QLabel,
-    QVBoxLayout,
-    QHBoxLayout,
-    QSpacerItem,
-    QSizePolicy,
-)
+from PyQt5.QtWidgets import QDialog, QCheckBox, QPushButton, QLabel, QVBoxLayout, QHBoxLayout, QSpacerItem, QSizePolicy
 from PyQt5.QtCore import Qt
 
 
@@ -63,15 +54,13 @@ class ReportPopup(QDialog):
         # Check if at least one option is selected
         if not (self.pdf_check.isChecked() or self.html_check.isChecked()):
             # Display an error message
-            self.message_label.setText(
-                "Bitte wählen Sie mindestens ein Report-Format aus."
-            )
+            self.message_label.setText("Bitte wählen Sie mindestens ein Report-Format aus.")
             return
         # Get the selected options as a dictionary
         options = {
             "html": self.html_check.isChecked(),
             "pdf": self.pdf_check.isChecked(),
-            "save": self.save_check.isChecked(),
+            "save": self.save_check.isChecked()
         }
         # Emit a signal with the options
         self.result = options
