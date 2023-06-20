@@ -12,8 +12,15 @@ from sub.DB_Table_Export.DBExport import DatabaseExport
 from sub.DB_Table_Export.ReportPopUp import ReportPopup
 
 
-def report_functionality(parent_object: object, table: QTableWidget, report_name: str, report_type: REPORT_TYPES,
-                         scale: float = None, is_landscape: bool = None, **kwargs):
+def report_functionality(
+    parent_object: object,
+    table: QTableWidget,
+    report_name: str,
+    report_type: REPORT_TYPES,
+    scale: float = None,
+    is_landscape: bool = None,
+    **kwargs,
+):
     template = None
     pdf_filename = ""
     weekdays, year = None, None
@@ -28,7 +35,6 @@ def report_functionality(parent_object: object, table: QTableWidget, report_name
         # check if the expected kwargs are present
         keys = {"weekdays", "year"}  # your set of keys
         if not keys <= kwargs.keys():  # check if keys is a subset of kwargs.keys()
-
             # raise an exception if they are not
             raise ValueError("Missing required parameters for the weekplan report type")
 
@@ -48,7 +54,7 @@ def report_functionality(parent_object: object, table: QTableWidget, report_name
         return
 
     # Set the download path for the report files
-    download_path = os.path.join(os.path.expanduser('~'), "Downloads")
+    download_path = os.path.join(os.path.expanduser("~"), "Downloads")
 
     # Create a DatabaseExport object with the template, title and file names
     dbExp = DatabaseExport(template, report_name, download_path, download_path)
@@ -66,26 +72,41 @@ def report_functionality(parent_object: object, table: QTableWidget, report_name
         __mark_AT_holidays__(rows, colors_list, weekdays, year)
 
     # Create an HTML file from the template, headers and rows
-    html_filename = dbExp.create_html(headers, rows, colors_list, open_file=result['html'],
-                                      save_file=(result['html'] and result['save']))
+    html_filename = dbExp.create_html(
+        headers,
+        rows,
+        colors_list,
+        open_file=result["html"],
+        save_file=(result["html"] and result["save"]),
+    )
     # Convert the HTML file to a PDF file with a given scale factor
 
-    if result['pdf']:
-        pdf_filename = dbExp.convert_html_to_pdf(is_landscape=is_landscape, scale=scale, open_file=result['pdf'],
-                                                 save_file=(result['pdf'] and result['save']))
-    if result['save']:
+    if result["pdf"]:
+        pdf_filename = dbExp.convert_html_to_pdf(
+            is_landscape=is_landscape,
+            scale=scale,
+            open_file=result["pdf"],
+            save_file=(result["pdf"] and result["save"]),
+        )
+    if result["save"]:
         __success_msgbox__(result, html_filename, pdf_filename)
 
 
 # Austrian holidays are determined and then marked in red in the weekly plan
-def __mark_AT_holidays__(rows: List[List[List[str]]], color_list: List[List[Optional[str]]],
-                         weekdays: List, year: int):
+def __mark_AT_holidays__(
+    rows: List[List[List[str]]],
+    color_list: List[List[Optional[str]]],
+    weekdays: List,
+    year: int,
+):
     austria_holidays = holidays.AT(years=int(year))  # get holidays for the given year
     color = "background-color: #D3D3D3;"
 
     # Check if each weekday is a holiday and if so, make it red and the background gray
     for j, day in enumerate(weekdays):
-        if day in austria_holidays:  # use membership test instead of iterating over items
+        if (
+            day in austria_holidays
+        ):  # use membership test instead of iterating over items
             for i in range(len(rows)):
                 color_list[i][j] = color
 
@@ -119,11 +140,13 @@ def __create_color_list__(table: Union[QTableWidget, QTableWidget], color_dict: 
                 if not cell_colors:
                     for color_key in color_dict.keys():
                         tex = text.replace("\n", " ")
-                        pattern = re.compile(fr"[\s/\\]{color_key.lower()}[\s/\\]")
+                        pattern = re.compile(rf"[\s/\\]{color_key.lower()}[\s/\\]")
                         if pattern.search(tex):
                             text = text.replace(color_key, "")
                             print("uff: ", color_dict.get(color_key, "#663399"))
-                            cell_colors.append(color_dict.get(color_key, "#663399"))  # DEBUG color violet: #663399
+                            cell_colors.append(
+                                color_dict.get(color_key, "#663399")
+                            )  # DEBUG color violet: #663399
 
                 # evaluate formatted background color
                 if len(cell_colors) < 1:
@@ -139,13 +162,16 @@ def __create_color_list__(table: Union[QTableWidget, QTableWidget], color_dict: 
     return rows
 
 
-def __get_headers_from_table_widget__(table: Union[QTableWidget, QTableWidget]) -> List[str]:
+def __get_headers_from_table_widget__(
+    table: Union[QTableWidget, QTableWidget]
+) -> List[str]:
     headers = [table.horizontalHeaderItem(i).text() for i in range(table.columnCount())]
     return headers
 
 
-def __get_rows_from_table_widget__(table: Union[QTableWidget, QTableWidget], report_type: REPORT_TYPES) -> \
-        List[List[List[str]]]:
+def __get_rows_from_table_widget__(
+    table: Union[QTableWidget, QTableWidget], report_type: REPORT_TYPES
+) -> List[List[List[str]]]:
     rows = []
     # If the report type is REPORT_TABLE
     if report_type == REPORT_TYPES.REPORT_TABLE:
@@ -160,14 +186,16 @@ def __get_rows_from_table_widget__(table: Union[QTableWidget, QTableWidget], rep
                     row.append("")
                     continue
                 # If the item text is not empty
-                if item.text() != '':
+                if item.text() != "":
                     row.append(item.text())
                     continue
 
                 # If the item text is empty
                 data = item.data(Qt.ItemDataRole.CheckStateRole)
                 # Check if cell is actually empty or a type of checkbox
-                row.append("☐" if data == 0 else "▣" if data == 1 else "☑" if data == 2 else "")
+                row.append(
+                    "☐" if data == 0 else "▣" if data == 1 else "☑" if data == 2 else ""
+                )
             # If there is any data in the row, append it to rows
             if any(row):
                 rows.append(row)
@@ -194,20 +222,22 @@ def __get_rows_from_table_widget__(table: Union[QTableWidget, QTableWidget], rep
     return rows
 
 
-def __success_msgbox__(result: Dict[str, bool], html_filename: str, pdf_filename: str) -> None:
+def __success_msgbox__(
+    result: Dict[str, bool], html_filename: str, pdf_filename: str
+) -> None:
     msg = QMessageBox()
     msg.setWindowTitle("Report Successful")
     msg.setIcon(QMessageBox.Information)
     horizontalSpacer = QSpacerItem(600, 0, QSizePolicy.Minimum, QSizePolicy.Expanding)
 
-    if result['save']:
+    if result["save"]:
         msg.setText("Successfully created and saved following reports:")
     else:
         msg.setText(f"Successfully created following reports: ")
     report = "<html><ul>"
-    if result['html']:
+    if result["html"]:
         report += f"<li>HTML: <br>{html_filename}</li>"
-    if result['pdf']:
+    if result["pdf"]:
         report += f"<li>PDF: <br>{pdf_filename}</li>"
     report += "</ul></html>"
     msg.setInformativeText(report)
