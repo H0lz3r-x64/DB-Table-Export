@@ -60,7 +60,7 @@ def report_functionality(parent_object: object, table: QTableWidget, report_name
     color_dict = __get_color_dict(parent_object)
     colors_list = __create_color_list(table, color_dict)
 
-    colors_list, rows  = __strip_empty_rows_keep_shape(colors_list, rows)
+    colors_list, rows = __rmv_trailing_empty_rows_n_keep_shape(colors_list, rows)
 
     # Mark holidays on WEEKPLAN report type
     if report_type == REPORT_TYPES.REPORT_WEEKPLAN:
@@ -91,24 +91,28 @@ def __mark_AT_holidays(rows: List[List[List[str]]], color_list: List[List[Option
                 color_list[i][j] = color
 
 
-def __strip_empty_rows_keep_shape(list1: Union[List[List[List[str]]], List[List[Optional[str]]]], list2: Union[List[List[List[str]]], List[List[Optional[str]]]]) -> \
-        Tuple[Union[List[List[List[str]]], List[List[Optional[str]]]], Union[List[List[List[str]]], List[List[Optional[str]]]]]:
+def __rmv_trailing_empty_rows_n_keep_shape(list1: Union[List[List[List[str]]], List[List[Optional[str]]]],
+                                           list2: Union[List[List[List[str]]], List[List[Optional[str]]]]) -> \
+        Tuple[Union[List[List[List[str]]], List[List[Optional[str]]]],
+              Union[List[List[List[str]]], List[List[Optional[str]]]]]:
     """
-    This function removes empty rows from the end of a list of lists, either containing lists of lists of strings or lists of optional
-    strings.
+    The function removes trailing empty rows from two lists while preserving their original shape.
 
-    Parameters:
-        input_list (Union[List[List[List[str]]], List[List[Optional[str]]]]): A nested list of strings or None values.
-
-    Returns:
-        Union[List[List[List[str]]], List[List[Optional[str]]]]: A copy of the input list with empty rows removed from the end.
+    :param list1: The first input list, which can be a list of lists of lists of strings or a list of lists of optional
+    strings
+    :type list1: Union[List[List[List[str]]], List[List[Optional[str]]]]
+    :param list2: The parameter `list2` is a list of lists, where each inner list can contain either strings or `None`
+    values. It can also be a list of lists of lists, where each innermost list contains strings
+    :type list2: Union[List[List[List[str]]], List[List[Optional[str]]]]
+    :return: A tuple containing two lists, which are the modified versions of the input lists after removing any trailing
+    empty rows. The lists have the same shape as the input lists.
     """
 
-    input_list.reverse()
+    while (list1 and not any(list1[-1])) and (list2 and not any(list2[-1])):
+        list1.pop()
+        list2.pop()
 
-    while input_list and not any(input_list[-1]):
-        input_list.pop()
-    return input_list
+    return list1, list2
 
 
 def __get_color_dict(parent_object: object):
