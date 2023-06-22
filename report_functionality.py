@@ -134,8 +134,7 @@ def __create_color_list__(table: Union[QTableWidget, QTableWidget], color_dict: 
                     color = f"background-image: linear-gradient(to bottom right, {','.join(cell_colors)});"
 
             row.append(color)
-        if any(row):
-            rows.append(row)
+        rows.append(row)
     return rows
 
 
@@ -188,8 +187,7 @@ def __get_rows_from_table_widget__(table: Union[QTableWidget, QTableWidget], rep
                 lines_stripped = [line.strip() for line in lines]
                 row.append(lines_stripped)
             # If there is any data in the row, append it to rows
-            if any(row):
-                rows.append(row)
+            rows.append(row)
 
     return rows
 
