@@ -1,7 +1,6 @@
-import fnmatch
 import os, holidays
 import re
-from typing import Dict, Union, List, Optional
+from typing import Dict, Union, List, Optional, Tuple
 
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QMessageBox, QTableWidget, QSpacerItem, QSizePolicy
@@ -54,16 +53,18 @@ def report_functionality(parent_object: object, table: QTableWidget, report_name
     dbExp = DatabaseExport(template, report_name, download_path, download_path)
 
     # Get the table headers and rows from the table widget
-    headers = __get_headers_from_table_widget__(table)
-    rows = __get_rows_from_table_widget__(table, report_type)
+    headers = __get_headers_from_table_widget(table)
+    rows = __get_rows_from_table_widget(table, report_type)
 
     # Colour table
-    color_dict = __get_color_dict__(parent_object)
-    colors_list = __create_color_list__(table, color_dict)
+    color_dict = __get_color_dict(parent_object)
+    colors_list = __create_color_list(table, color_dict)
+
+    colors_list, rows  = __strip_empty_rows_keep_shape(colors_list, rows)
 
     # Mark holidays on WEEKPLAN report type
     if report_type == REPORT_TYPES.REPORT_WEEKPLAN:
-        __mark_AT_holidays__(rows, colors_list, weekdays, year)
+        __mark_AT_holidays(rows, colors_list, weekdays, year)
 
     # Create an HTML file from the template, headers and rows
     html_filename = dbExp.create_html(headers, rows, colors_list, open_file=result['html'],
@@ -74,12 +75,12 @@ def report_functionality(parent_object: object, table: QTableWidget, report_name
         pdf_filename = dbExp.convert_html_to_pdf(is_landscape=is_landscape, scale=scale, open_file=result['pdf'],
                                                  save_file=(result['pdf'] and result['save']))
     if result['save']:
-        __success_msgbox__(result, html_filename, pdf_filename)
+        __success_msgbox(result, html_filename, pdf_filename)
 
 
 # Austrian holidays are determined and then marked in red in the weekly plan
-def __mark_AT_holidays__(rows: List[List[List[str]]], color_list: List[List[Optional[str]]],
-                         weekdays: List, year: int):
+def __mark_AT_holidays(rows: List[List[List[str]]], color_list: List[List[Optional[str]]],
+                       weekdays: List, year: int):
     austria_holidays = holidays.AT(years=int(year))  # get holidays for the given year
     color = "background-color: #D3D3D3;"
 
@@ -90,7 +91,36 @@ def __mark_AT_holidays__(rows: List[List[List[str]]], color_list: List[List[Opti
                 color_list[i][j] = color
 
 
-def __get_color_dict__(parent_object: object):
+def __strip_empty_rows_keep_shape(list1: Union[List[List[List[str]]], List[List[Optional[str]]]], list2: Union[List[List[List[str]]], List[List[Optional[str]]]]) -> \
+        Tuple[Union[List[List[List[str]]], List[List[Optional[str]]]], Union[List[List[List[str]]], List[List[Optional[str]]]]]:
+    """
+    This function removes empty rows from the end of a list of lists, either containing lists of lists of strings or lists of optional
+    strings.
+
+    Parameters:
+        input_list (Union[List[List[List[str]]], List[List[Optional[str]]]]): A nested list of strings or None values.
+
+    Returns:
+        Union[List[List[List[str]]], List[List[Optional[str]]]]: A copy of the input list with empty rows removed from the end.
+    """
+
+    input_list.reverse()
+
+    while input_list and not any(input_list[-1]):
+        input_list.pop()
+    return input_list
+
+
+def __get_color_dict(parent_object: object):
+    """
+    This function retrieves a dictionary of colors associated with family names from database.
+
+    :param parent_object: The parent_object parameter is an object that is passed to the function. It is used to get an
+    instance of the Database class using the get_instance method.
+    :type parent_object: object
+    :return: a dictionary where the keys are the values in the "Familienname" column of the "kat_ausbilder" table in the
+    database, and the values are the values in the "Farbe" column of the same table.
+    """
     db = Database.get_instance(parent_object)
     sql = "SELECT Familienname, Farbe from kat_ausbilder"
     cursor = db.select(sql)
@@ -99,7 +129,7 @@ def __get_color_dict__(parent_object: object):
     return colors_dict
 
 
-def __create_color_list__(table: Union[QTableWidget, QTableWidget], color_dict: dict):
+def __create_color_list(table: Union[QTableWidget, QTableWidget], color_dict: dict):
     rows = []
     for r in range(table.rowCount()):
         row = []
@@ -138,12 +168,12 @@ def __create_color_list__(table: Union[QTableWidget, QTableWidget], color_dict: 
     return rows
 
 
-def __get_headers_from_table_widget__(table: Union[QTableWidget, QTableWidget]) -> List[str]:
+def __get_headers_from_table_widget(table: Union[QTableWidget, QTableWidget]) -> List[str]:
     headers = [table.horizontalHeaderItem(i).text() for i in range(table.columnCount())]
     return headers
 
 
-def __get_rows_from_table_widget__(table: Union[QTableWidget, QTableWidget], report_type: REPORT_TYPES) -> \
+def __get_rows_from_table_widget(table: Union[QTableWidget, QTableWidget], report_type: REPORT_TYPES) -> \
         List[List[List[str]]]:
     rows = []
     # If the report type is REPORT_TABLE
@@ -192,7 +222,7 @@ def __get_rows_from_table_widget__(table: Union[QTableWidget, QTableWidget], rep
     return rows
 
 
-def __success_msgbox__(result: Dict[str, bool], html_filename: str, pdf_filename: str) -> None:
+def __success_msgbox(result: Dict[str, bool], html_filename: str, pdf_filename: str) -> None:
     msg = QMessageBox()
     msg.setWindowTitle("Report Successful")
     msg.setIcon(QMessageBox.Information)
