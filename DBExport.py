@@ -373,7 +373,7 @@ class DatabaseExport:
         # and returns False as expected.
 
     @staticmethod
-    def __resource_path__(relative_path):
+    def __resource_path__(relative_path_from_project_root: str):
         """ Get absolute path to resource, works for dev and for PyInstaller """
         base_path = getattr(sys, '_MEIPASS', definitions.project_root)
-        return os.path.normpath(os.path.join(base_path, relative_path))
+        return os.path.normpath(os.path.join(base_path, relative_path_from_project_root))
