@@ -1,3 +1,4 @@
+import datetime
 import os, holidays
 import re
 from typing import Dict, Union, List, Optional, Tuple
@@ -75,6 +76,7 @@ def report_functionality(parent_object: object, table: QTableWidget, report_name
         pdf_filename = dbExp.convert_html_to_pdf(is_landscape=is_landscape, scale=scale, open_file=result['pdf'],
                                                  save_file=(result['pdf'] and result['save']))
     if result['save']:
+        print(f"{datetime.datetime.now()}: opening success msg box...")
         __success_msgbox(result, html_filename, pdf_filename)
 
 
