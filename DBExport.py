@@ -1,7 +1,7 @@
 import base64, os, jinja2, datetime, bs4, sys
 from typing import Union, Collection
 
-import chromedriver_autoinstaller
+import chromedriver_autoinstaller_fix
 from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.service import Service
@@ -188,10 +188,13 @@ class DatabaseExport:
         chromedriver_path = self.__resource_path__('./tmp_files/drivers/')
 
         # install or update the chromedriver if needed
-        chromedriver_autoinstaller.install(cwd=False, path=chromedriver_path)
+        chromedriver_autoinstaller_fix.install(cwd=False, path=chromedriver_path)
+        # Check if the current version of chromedriver exists
+        # and if it doesn't, download it automatically,
+        # then add chromedriver to path
 
-        # create the chrome_service and set flags appropriately
-        chrome_service = Service(chromedriver_path + "chromedriver.exe", log_path=os.devnull)
+        # create the chrome_service from path and set flags appropriately
+        chrome_service = Service(log_path=os.devnull)
         chrome_service.creation_flags = CREATE_NO_WINDOW
 
         # finally create our driver object
