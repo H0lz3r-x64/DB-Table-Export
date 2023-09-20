@@ -75,7 +75,7 @@ class DatabaseExport:
         return self.format_dict[paper_format]
 
     @staticmethod
-    def __consolidate_css_html(input_html) -> str:
+    def consolidate_css_html(input_html) -> str:
         """
         Consolidate the html string with its external css references and png images,
         so any externally referenced css page(s) and image file(s) are not needed.
@@ -135,7 +135,7 @@ class DatabaseExport:
 
         # consolidate the html string with its external css references,
         # so any externally referenced css page(s) are not needed.
-        sourceHtml = self.__consolidate_css_html(sourceHtml)
+        sourceHtml = self.consolidate_css_html(sourceHtml)
 
         # save as temporary file
         print(f"{datetime.datetime.now()}: saving temporary HTML file")
