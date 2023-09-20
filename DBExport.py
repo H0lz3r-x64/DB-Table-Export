@@ -138,7 +138,7 @@ class DatabaseExport:
         sourceHtml = self.__consolidate_css_html(sourceHtml)
 
         # save as temporary file
-        print(f"{datetime.datetime.now()}: saving temporary PDF file")
+        print(f"{datetime.datetime.now()}: saving temporary HTML file")
         self.__save_to_file(self.tmp_html_path, sourceHtml, override_check=False)
 
         # open file
